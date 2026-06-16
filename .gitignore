@@ -1,0 +1,7 @@
+models/
+synthetic/
+logs/
+mlruns/
+__pycache__/
+*.pyc
+.DS_Store
