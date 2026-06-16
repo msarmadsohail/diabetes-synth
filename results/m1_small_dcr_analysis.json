@@ -1,0 +1,16 @@
+{
+  "experiment": "M1 Small model (MOSTLY_AI/Small, 18k params) vs Medium (64k params)",
+  "hypothesis": "Smaller model capacity reduces memorization of 6,800 diabetic training rows",
+  "metric": "DCR ratio = mean(DCR-train) / mean(DCR-test). Closer to 1.0 = less memorization.",
+  "threshold": "< 0.8 = memorization risk",
+  "medium_model_avg_ratio": 0.713,
+  "splits": [
+    {"split": 0, "dcr_train": 0.4391, "dcr_test": 0.6185, "ratio": 0.710},
+    {"split": 1, "dcr_train": 0.4335, "dcr_test": 0.6068, "ratio": 0.714},
+    {"split": 2, "dcr_train": 0.4375, "dcr_test": 0.6199, "ratio": 0.706},
+    {"split": 3, "dcr_train": 0.4314, "dcr_test": 0.6117, "ratio": 0.705},
+    {"split": 4, "dcr_train": 0.4460, "dcr_test": 0.6169, "ratio": 0.723}
+  ],
+  "avg_ratio": 0.712,
+  "conclusion": "No improvement over Medium (0.712 vs 0.713). Model size is not the bottleneck. With only 6,800 training rows, even 18k parameters is sufficient to memorize the distribution. The DCR gap reflects the tight diabetic cluster in feature space, not model capacity. Differential Privacy is the appropriate next lever."
+}
