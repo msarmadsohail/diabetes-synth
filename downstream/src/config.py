@@ -27,6 +27,7 @@ class AugmentationConfig:
     tune_ratio: bool = False
     use_hard_fn: bool = True                  # filter pool to FN before augmenting
     fn_threshold: float = 0.5
+    fn_selection: str = "sorted"              # sorted | random — how to pick from FN pool
 
 
 @dataclass

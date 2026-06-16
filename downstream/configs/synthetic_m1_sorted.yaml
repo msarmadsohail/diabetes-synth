@@ -1,0 +1,12 @@
+run_name: "02_synthetic_m1_sorted"
+mode: "synthetic"
+n_trials: 50
+inner_folds: 3
+gpu_id: 0
+augmentation:
+  pool: "m1"
+  mode: "target_ratio"
+  ratios: [0.0, 0.10, 0.15, 0.20, 0.30, 0.50]
+  use_hard_fn: true
+  fn_threshold: 0.5
+  fn_selection: "sorted"

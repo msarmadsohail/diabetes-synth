@@ -6,6 +6,7 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+import pandas as pd
 
 from config import RunConfig, N_FOLDS, TARGET, POS_VAL
 from data import load_fold, encode_features, get_xy, load_synthetic_pool
@@ -49,7 +50,8 @@ def run_fold(fold: int, cfg: RunConfig) -> dict:
     log.info(f"[fold={fold}] train={len(X_train):,}  pos={int(y_train.sum()):,}  test={len(X_test):,}")
 
     # ── Synthetic pool ────────────────────────────────────────────────────────
-    X_pool = None
+    pool_df     = None
+    X_pool_raw  = None
     if cfg.mode == "synthetic":
         pool_df = load_synthetic_pool(cfg.augmentation.pool, fold)
         pool_df, _ = encode_features(pool_df, encoders=encoders, fit=False)
@@ -60,26 +62,38 @@ def run_fold(fold: int, cfg: RunConfig) -> dict:
     fold_dir = cfg.models_dir / f"fold_{fold}"
     fold_dir.mkdir(parents=True, exist_ok=True)
 
+    # directory to save FN-filtered rows for inspection
+    fn_save_dir = cfg.results_dir / f"fn_pool_fold_{fold}"
+
     fold_results = {}
+    selection = getattr(cfg.augmentation, "fn_selection", "sorted")
 
     for clf_name in CLASSIFIERS:
         log.info(f"[fold={fold}] [{clf_name}] Tuning — {cfg.n_trials} trials")
         ct0 = time.time()
 
-        pool_for_tuning = None
         if cfg.mode == "synthetic" and not cfg.augmentation.tune_ratio:
             # Sweep ratios — run separate study per ratio, pick best
             best_pr, best_ratio, best_params = -1, 0.0, {}
+            fn_df_cache, X_fn_cache = None, None
+
             for ratio in cfg.augmentation.ratios:
-                # FN filter with a quick baseline fit when ratio > 0
                 if ratio > 0 and cfg.augmentation.use_hard_fn:
                     base = get_classifier(clf_name, {}, gpu_id=cfg.gpu_id)
                     base.fit(X_train, y_train)
-                    _, X_fn = filter_hard_fn(pool_df, base, X_pool_raw,
-                                             threshold=cfg.augmentation.fn_threshold)
+                    fn_df, X_fn, p_fn = filter_hard_fn(
+                        pool_df, base, X_pool_raw,
+                        threshold=cfg.augmentation.fn_threshold,
+                        selection=selection,
+                    )
+                    log.info(f"[fold={fold}] [{clf_name}] ratio={ratio}  "
+                             f"FN pool={len(X_fn):,} / {len(X_pool_raw):,} "
+                             f"({len(X_fn)/len(X_pool_raw)*100:.1f}%)  "
+                             f"prob range [{p_fn.min():.3f}, {p_fn.max():.3f}]")
                     pool_for_study = X_fn if len(X_fn) > 0 else X_pool_raw
+                    fn_df_cache, X_fn_cache = fn_df, X_fn
                 else:
-                    pool_for_study = X_pool_raw if cfg.mode == "synthetic" else None
+                    pool_for_study = X_pool_raw
 
                 params, val_pr, _ = run_study(
                     clf_name, X_train, y_train, cfg,
@@ -90,20 +104,30 @@ def run_fold(fold: int, cfg: RunConfig) -> dict:
 
             log.info(f"[fold={fold}] [{clf_name}] Best ratio={best_ratio}  val_pr={best_pr:.4f}")
 
-            # FN filter for final fit
+            # FN filter for final fit using best params
             if best_ratio > 0 and cfg.augmentation.use_hard_fn:
                 base = get_classifier(clf_name, best_params, gpu_id=cfg.gpu_id)
                 base.fit(X_train, y_train)
-                _, X_fn = filter_hard_fn(pool_df, base, X_pool_raw,
-                                         threshold=cfg.augmentation.fn_threshold)
+                fn_df, X_fn, p_fn = filter_hard_fn(
+                    pool_df, base, X_pool_raw,
+                    threshold=cfg.augmentation.fn_threshold,
+                    selection=selection,
+                )
                 X_pool_final = X_fn if len(X_fn) > 0 else X_pool_raw
+
+                # save FN rows for inspection
+                fn_save_dir.mkdir(parents=True, exist_ok=True)
+                fn_out = fn_save_dir / f"{clf_name}_fn_rows.csv"
+                fn_df.assign(fn_prob=p_fn).to_csv(fn_out, index=False)
+                log.info(f"[fold={fold}] [{clf_name}] Saved {len(fn_df):,} FN rows → {fn_out}")
             else:
-                X_pool_final = X_pool_raw if cfg.mode == "synthetic" else None
+                X_pool_final = X_pool_raw
 
             X_fit, y_fit = augment(
                 X_train, y_train,
                 X_pool_final if X_pool_final is not None else np.empty((0, X_train.shape[1])),
                 best_ratio, mode=cfg.augmentation.mode,
+                selection=selection,
                 seed=cfg.random_state,
             )
 
@@ -111,7 +135,7 @@ def run_fold(fold: int, cfg: RunConfig) -> dict:
             # Baseline or tune_ratio mode
             best_params, _, best_ratio = run_study(
                 clf_name, X_train, y_train, cfg,
-                X_pool=X_pool, ratio=0.0,
+                X_pool=None, ratio=0.0,
             )
             X_fit, y_fit = X_train, y_train
 
@@ -120,7 +144,7 @@ def run_fold(fold: int, cfg: RunConfig) -> dict:
         model.fit(X_fit, y_fit)
 
         # Evaluate
-        probs = model.predict_proba(X_test)[:, 1]
+        probs   = model.predict_proba(X_test)[:, 1]
         metrics = compute_metrics(y_test, probs)
         elapsed = round(time.time() - ct0, 1)
 
@@ -134,6 +158,8 @@ def run_fold(fold: int, cfg: RunConfig) -> dict:
             **metrics,
             "best_params": best_params,
             "best_ratio":  best_ratio if cfg.mode == "synthetic" else None,
+            "n_train":     int(len(X_fit)),
+            "n_augmented": int(len(X_fit) - len(X_train)) if cfg.mode == "synthetic" else 0,
             "elapsed_s":   elapsed,
         }
 
