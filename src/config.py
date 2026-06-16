@@ -30,11 +30,11 @@ M3_MAX_EPOCHS = 100
 M2_NONFR_FRAC = 0.10           # 10% non-diabetic rows for M2
 
 # generation
-M1_POOL_TARGET = 50_000        # target positive rows — M1 batched free generation
-M2_POOL_TARGET = 150_000
-M1_GEN_BATCH   = 100_000       # M1 is 100% positive so one pass usually enough
-M2_GEN_BATCH   = 50_000
-M3_GEN_BATCH   = 5_000_000    # single free pass for M3 — natural yield
+M1_POOL_TARGET = 100_000       # target positive rows — M1 single batch (100% diabetic)
+M2_POOL_TARGET = 100_000       # target positive rows — M2 batched (high diabetic yield)
+M1_GEN_BATCH   = 100_000       # M1 is 100% diabetic — one pass is enough
+M2_GEN_BATCH   = 60_000        # M2 ~90% diabetic — one or two passes
+M3_GEN_BATCH   = 2_000_000    # single free pass — natural ~8.5% yield (~170k diabetic)
 
 POOL_PER_MODEL = 150_000       # legacy alias
 

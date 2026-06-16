@@ -35,7 +35,8 @@ def _run_m1(ws_m1: Path, fold: int, out_path: Path, results: dict) -> None:
     from train_argn import load_argn
     with T.timed("generate_m1", fold):
         m1 = load_argn(ws_m1, device=f"cuda:{GPU_M1}")
-        pool = _generate_free_batched(m1, M1_POOL_TARGET, M1_GEN_BATCH, "M1", fold)
+        # M1 is 100% diabetic — single batch, no filtering loop needed
+        pool = m1.sample(n_samples=M1_GEN_BATCH)
         pool.to_csv(out_path, index=False)
         T.log.info(f"[fold={fold}] M1 pool saved: {len(pool):,} rows → {out_path}")
         results["m1"] = pool

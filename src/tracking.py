@@ -36,6 +36,8 @@ def setup_fold_logging(fold: int) -> None:
 
 
 def init_mlflow(fold: int) -> None:
+    import os
+    os.environ["MLFLOW_ALLOW_FILE_STORE"] = "true"
     MLRUNS_DIR.mkdir(parents=True, exist_ok=True)
     mlflow.set_tracking_uri(str(MLRUNS_DIR))
     mlflow.set_experiment(f"diabetes_synth_fold_{fold}")
