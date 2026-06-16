@@ -1,0 +1,14 @@
+run_name: "04_synthetic_m3"
+mode: "synthetic"
+n_trials: 50
+inner_folds: 3
+gpu_id: 0
+random_state: 42
+augmentation:
+  enabled: true
+  pool: "m3"
+  mode: "target_ratio"
+  ratios: [0.0, 0.10, 0.15, 0.20, 0.30, 0.50]
+  tune_ratio: false
+  use_hard_fn: true
+  fn_threshold: 0.5

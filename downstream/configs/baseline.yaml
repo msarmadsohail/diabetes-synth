@@ -1,0 +1,8 @@
+run_name: "01_baseline"
+mode: "baseline"
+n_trials: 50
+inner_folds: 3
+gpu_id: 0
+random_state: 42
+augmentation:
+  enabled: false
