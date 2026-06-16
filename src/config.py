@@ -24,6 +24,9 @@ HOLDOUT_RATIO = 0.20
 RANDOM_STATE  = 42
 
 # ARGN training
+M1_MODEL      = "MOSTLY_AI/Small"   # Small: 18k params vs 64k Medium — less memorization on 6.8k rows
+M2_MODEL      = "MOSTLY_AI/Medium"
+M3_MODEL      = "MOSTLY_AI/Medium"
 M1_MAX_EPOCHS = 50             # diabetic-only; small dataset, early stop fires fast
 M2_MAX_EPOCHS = 100
 M3_MAX_EPOCHS = 100

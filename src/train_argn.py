@@ -7,6 +7,7 @@ import pandas as pd
 
 from config import (
     MODELS_DIR,
+    M1_MODEL, M2_MODEL, M3_MODEL,
     M1_MAX_EPOCHS, M2_MAX_EPOCHS, M3_MAX_EPOCHS,
     GPU_M1, GPU_M3,
 )
@@ -15,13 +16,14 @@ import tracking as T
 GPU_M1_M2 = GPU_M1
 
 
-def _worker(data_path: str, workspace_dir: str, max_epochs: int, device: str) -> None:
+def _worker(data_path: str, workspace_dir: str, max_epochs: int, model: str, device: str) -> None:
     warnings.filterwarnings("ignore")
     import pandas as pd
     from mostlyai.engine import TabularARGN
 
     df = pd.read_parquet(data_path)
     argn = TabularARGN(
+        model=model,
         max_epochs=max_epochs,
         workspace_dir=workspace_dir,
         device=device,
@@ -48,6 +50,7 @@ def train_all(
 
     with T.timed("train_m1", fold, {"rows": len(m1_data), "diabetic": int((m1_data["diabetes"]==1).sum())}):
         argn_m1 = TabularARGN(
+            model=M1_MODEL,
             max_epochs=M1_MAX_EPOCHS,
             workspace_dir=str(ws_m1),
             device=f"cuda:{GPU_M1_M2}",
@@ -62,6 +65,7 @@ def train_all(
     ws_m2.mkdir(parents=True, exist_ok=True)
     with T.timed("train_m2", fold, {"rows": len(m2_data)}):
         argn_m2 = TabularARGN(
+            model=M2_MODEL,
             max_epochs=M2_MAX_EPOCHS,
             workspace_dir=str(ws_m2),
             device=f"cuda:{GPU_M1_M2}",
@@ -77,7 +81,7 @@ def train_all(
     ctx = mp.get_context("spawn")
     m3_proc = ctx.Process(
         target=_worker,
-        args=(str(tmp_m3), str(ws_m3), M3_MAX_EPOCHS, f"cuda:{GPU_M3}"),
+        args=(str(tmp_m3), str(ws_m3), M3_MAX_EPOCHS, M3_MODEL, f"cuda:{GPU_M3}"),
         name=f"argn-m3-fold{fold}",
     )
     m3_proc.start()
