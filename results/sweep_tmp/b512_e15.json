@@ -1,0 +1,42 @@
+{
+  "batch_size": 512,
+  "max_epochs": 15,
+  "avg_ratio": 0.967,
+  "splits": [
+    {
+      "fold": 0,
+      "actual_epochs": 15.0,
+      "dcr_train": 2.177,
+      "dcr_test": 2.2553,
+      "ratio": 0.965
+    },
+    {
+      "fold": 1,
+      "actual_epochs": 15.0,
+      "dcr_train": 2.1789,
+      "dcr_test": 2.2517,
+      "ratio": 0.968
+    },
+    {
+      "fold": 2,
+      "actual_epochs": 15.0,
+      "dcr_train": 2.1784,
+      "dcr_test": 2.2542,
+      "ratio": 0.966
+    },
+    {
+      "fold": 3,
+      "actual_epochs": 15.0,
+      "dcr_train": 2.1767,
+      "dcr_test": 2.2478,
+      "ratio": 0.968
+    },
+    {
+      "fold": 4,
+      "actual_epochs": 15.0,
+      "dcr_train": 2.1767,
+      "dcr_test": 2.2536,
+      "ratio": 0.966
+    }
+  ]
+}
